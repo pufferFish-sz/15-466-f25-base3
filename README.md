@@ -1,8 +1,8 @@
-# (TODO: your game's title)
+# Duck Steps
 
-Author: (TODO: your name)
+Author: Shangyi Zhu
 
-Design: (TODO: In two sentences or fewer, describe what is new and interesting about your game.)
+Design: As Duckie the duck, you are learning how to step on the strong beats in 3/4 dance music
 
 Screen Shot:
 
@@ -10,6 +10,6 @@ Screen Shot:
 
 How To Play:
 
-(TODO: describe the controls and (if needed) goals/strategy.)
+Use the space key to tap at the strong beats in each measure
 
 This game was built with [NEST](NEST.md).
