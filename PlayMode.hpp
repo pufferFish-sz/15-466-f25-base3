@@ -34,6 +34,11 @@ struct PlayMode : Mode {
 	Scene::Transform* left_foot = nullptr;
 	Scene::Transform* right_foot = nullptr;
 
+	glm::quat right_foot_base_rotation;
+	glm::quat left_foot_base_rotation;
+	bool left_foot_step = false;
+
+	void duck_take_step(float dt);
 	// distance that duckie steps each step
 	float step_distance = 0.5f;
 
@@ -45,5 +50,9 @@ struct PlayMode : Mode {
 	
 	//camera:
 	Scene::Camera *camera = nullptr;
+
+private:
+	float tilt_time = 0.0f;
+	float tilt_duration = rhythm.seconds_per_beat();
 
 };

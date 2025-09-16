@@ -39,7 +39,7 @@ struct Rhythm {
 
 	//loop completion
 	bool all_strong_beats_hit();
-	bool finished_perfect();
+	//bool finished_perfect();
 
 	// public accessible configs
 	float bpm = 120.0f;

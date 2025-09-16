@@ -9,7 +9,7 @@ Rhythm::Rhythm(float _bpm, std::vector<Measure> _pattern, float _hit_window):
 }
 
 void Rhythm::reset(){
-	song_time = 0.0f;
+	song_time = 0.0001f;
 	perfect_this_loop = false;
 	hit_flags.assign(pattern.size(), { false,false,false });
 }
@@ -43,12 +43,12 @@ void Rhythm::update(float dt) {
 		perfect_this_loop = all_strong_beats_hit();
 		hit_flags.assign(pattern.size(), { false, false, false });
 	}
-	if (perfect_this_loop) {
-		std::cout << "[Rhythm] perfect loop\n";
+	/*if (perfect_this_loop) {
+		std::cout << "[rhythm] perfect loop\n";
 	}
 	else {
 		std::cout << "[Rhythm] loop wrapped, not perfect \n";
-	}
+	}*/
 }
 
 // calculate the nearest beat and find the difference between player 
@@ -59,15 +59,17 @@ Rhythm::HitResult Rhythm::register_tap() {
 	float tap = song_time;
 
 	int total_beats = int(pattern.size()) * 3;
-	int nearest_beat_idx = int(std::lround(tap / spb));
-	if (nearest_beat_idx >= total_beats) nearest_beat_idx = total_beats - 1;
-	if (nearest_beat_idx < 0) nearest_beat_idx = 0;
+	int nearest_unwrapped = int(std::lround(tap / spb));
+	float beat_time_unwrapped = float(nearest_unwrapped) * spb;
+	int idx_mod = nearest_unwrapped % total_beats;
+	if (idx_mod < 0) {
+		idx_mod += total_beats;
+	}
 
-	int measure_idx = nearest_beat_idx / 3;
-	int beat_idx = nearest_beat_idx % 3;
+	int measure_idx = idx_mod / 3;
+	int beat_idx = idx_mod % 3;
 
-	float beat_time = float(nearest_beat_idx) * spb;
-	float err = tap - beat_time;
+	float err = tap - beat_time_unwrapped;
 
 	hr.beat_idx = beat_idx;
 	hr.measure_idx = measure_idx;
@@ -79,7 +81,7 @@ Rhythm::HitResult Rhythm::register_tap() {
 		hr.is_strong = strong;
 
 		std::cout
-			<< "[Tap] measure=" << (measure_idx + 1)
+			<< "[Tap] measure=" << int(measure_idx)
 			<< " beat=" << (beat_idx + 1)
 			<< " strong=" << (strong ? "Y" : "N")
 			<< " error_ms=" << int(std::round(err * 1000.0f))
@@ -96,7 +98,7 @@ Rhythm::HitResult Rhythm::register_tap() {
 		else {
 			// Out-of-window debug:
 			std::cout
-				<< "[Tap] OUT OF WINDOW  measure=" << (measure_idx + 1)
+				<< "[Tap] OUT OF WINDOW  measure=" << int(measure_idx)
 				<< " beat=" << (beat_idx + 1)
 				<< " error_ms=" << int(std::round(err * 1000.0f))
 				<< " (window= " << int(std::round(hit_window * 1000.0f)) << "ms)\n";
@@ -125,6 +127,6 @@ bool Rhythm::all_strong_beats_hit() {
 	return true;
 }
 
-bool Rhythm::finished_perfect() {
-	return perfect_this_loop;
-}
+//bool Rhythm::finished_perfect() {
+//	return all_strong_beats_hit();
+//}

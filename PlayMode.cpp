@@ -70,6 +70,9 @@ PlayMode::PlayMode() : scene(*duck_scene), rhythm(
 	if (left_foot == nullptr) throw std::runtime_error("Left foot not found.");
 	if (right_foot == nullptr) throw std::runtime_error("Right foot not found.");
 
+	right_foot_base_rotation = right_foot->rotation;
+	left_foot_base_rotation = left_foot->rotation;
+
 	//get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
@@ -101,27 +104,12 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 		if (evt.key.key == SDLK_ESCAPE) {
 			SDL_SetWindowRelativeMouseMode(Mode::window, false);
 			return true;
-		} else if (evt.key.key == SDLK_A) {
-			left.downs += 1;
-			left.pressed = true;
-			return true;
-		} else if (evt.key.key == SDLK_D) {
-			right.downs += 1;
-			right.pressed = true;
-			return true;
-		} else if (evt.key.key == SDLK_W) {
-			up.downs += 1;
-			up.pressed = true;
-			return true;
-		} else if (evt.key.key == SDLK_S) {
-			down.downs += 1;
-			down.pressed = true;
-			return true;
 		} 
 		else if (evt.key.key == SDLK_SPACE) {
 			if (!space.pressed) {
 				space.downs += 1;
 				space.pressed = true;
+				std::cout << "space is pressed" << std::endl;
 			}
 			
 			return true;
@@ -129,20 +117,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			//honk_oneshot = Sound::play_3D(*honk_sample, 0.3f, glm::vec3(4.6f, -7.8f, 6.9f)); //hardcoded position of front of car, from blender
 		}
 	} else if (evt.type == SDL_EVENT_KEY_UP) {
-		if (evt.key.key == SDLK_A) {
-			left.pressed = false;
-			return true;
-		} else if (evt.key.key == SDLK_D) {
-			right.pressed = false;
-			return true;
-		} else if (evt.key.key == SDLK_W) {
-			up.pressed = false;
-			return true;
-		} else if (evt.key.key == SDLK_S) {
-			down.pressed = false;
-			return true;
-		}
-		else if (evt.key.key == SDLK_SPACE) {
+		if (evt.key.key == SDLK_SPACE) {
 			space.pressed = false;
 			return true;
 		}
@@ -169,20 +144,55 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 	return false;
 }
 
+void PlayMode::duck_take_step(float dt) {
+	if (tilt_time <= 0.0f) return;
+
+	tilt_time = std::max(0.0f, tilt_time - dt);
+	float t = 1.0f - (tilt_time / tilt_duration);
+
+	float lift = std::sin(glm::pi<float>() * t);
+	float angle = glm::radians(30.0f) * lift;
+
+	float forward = -step_distance * (dt / tilt_duration);
+
+	duck->position += glm::vec3(0.0f, forward, 0.0f);
+	//std::cout << "duck position is " << duck->position.y << std::endl;
+
+	if (left_foot_step) {
+		left_foot->rotation = left_foot_base_rotation * glm::angleAxis(angle, glm::vec3(-1, 0, 0));
+		right_foot->rotation = right_foot_base_rotation;
+	}
+	else {
+		right_foot->rotation = right_foot_base_rotation * glm::angleAxis(angle, glm::vec3(-1, 0, 0));
+		//std::cout << "duck rfoot rotation is " << right_foot->rotation.y << std::endl;
+		left_foot->rotation = left_foot_base_rotation;
+	}
+
+	if (tilt_time <= 0.0f) {
+		left_foot->rotation = left_foot_base_rotation;
+		right_foot->rotation = right_foot_base_rotation;
+		left_foot_step = !left_foot_step;
+	}
+}
+
 void PlayMode::update(float elapsed) {
 	rhythm.update(elapsed);
 	uint8_t presses = space.downs;
+	//std::cout << "num presses: " << int(presses) << std::endl;
 	space.downs = 0;
 
 	for (uint8_t i = 0; i < presses; ++i) {
 		Rhythm::HitResult hr = rhythm.register_tap();
+		std::cout << "measure " << hr.measure_idx << std::endl;
 
-		if (duck) {
-			duck->position.y -= step_distance;
+		if (tilt_time <= 0.0f) {
+			tilt_time = tilt_duration;
 		}
-	}
 
-	if (rhythm.finished_perfect()) {
+	}
+	duck_take_step(elapsed);
+
+	if (rhythm.all_strong_beats_hit()) {
 		std::cout << "[PlayMode] finished perfect!!!" << std::endl;
 	}
 
@@ -254,12 +264,12 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 		));
 
 		constexpr float H = 0.09f;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
+		lines.draw_text("Tap space to make Duckie step on the strong beats",
 			glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
 		float ofs = 2.0f / drawable_size.y;
-		lines.draw_text("Mouse motion rotates camera; WASD moves; escape ungrabs mouse",
+		lines.draw_text("Tap space to make Duckie step on the strong beats",
 			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
