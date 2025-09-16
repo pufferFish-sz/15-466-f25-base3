@@ -38,9 +38,13 @@ Load< Scene > duck_scene(LoadTagDefault, []() -> Scene const * {
 	});
 });
 
-Load< Sound::Sample > duck_music_sample(LoadTagDefault, []() -> Sound::Sample const * {
-	return new Sound::Sample(data_path("duck_init.wav"));
-});
+//Load< Sound::Sample > duck_music_sample(LoadTagDefault, []() -> Sound::Sample const * {
+//	return new Sound::Sample(data_path("duck_init.wav"));
+//});
+
+Load< Sound::Sample > duck_music_sample(LoadTagDefault, []() -> Sound::Sample const* {
+	return new Sound::Sample(data_path("duck_dance.wav"));
+	});
 
 
 PlayMode::PlayMode() : scene(*duck_scene), rhythm(
@@ -49,9 +53,9 @@ PlayMode::PlayMode() : scene(*duck_scene), rhythm(
 		Rhythm::Measure{ true, false, false },
 		Rhythm::Measure{ true, false, false },
 		Rhythm::Measure{ true, false, false },
-		Rhythm::Measure{ true, false, false },
-		Rhythm::Measure{ true, false, false },
-		Rhythm::Measure{ true, false, false },
+		Rhythm::Measure{ false, false, true },
+		Rhythm::Measure{ false, false, true },
+		Rhythm::Measure{ false, false, false },
 		Rhythm::Measure{ true, false, false },
 		Rhythm::Measure{ true, false, false },
 },
