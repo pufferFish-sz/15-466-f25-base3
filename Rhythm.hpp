@@ -46,9 +46,10 @@ struct Rhythm {
 	std::vector<Measure> pattern;
 	float hit_window = 0.12f;
 
+	float song_time = 0.0f;
+
 private:
 	bool playing = false;
-	float song_time = 0.0f;
 	bool perfect_this_loop = false;
 	std::vector<std::array<bool, 3>> hit_flags;
 

@@ -95,6 +95,7 @@ PlayMode::PlayMode() : scene(*duck_scene), rhythm(
 	}
 }
 
+
 PlayMode::~PlayMode() {
 }
 
@@ -109,7 +110,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			if (!space.pressed) {
 				space.downs += 1;
 				space.pressed = true;
-				std::cout << "space is pressed" << std::endl;
+				//std::cout << "space is pressed" << std::endl;
 			}
 			
 			return true;
@@ -121,7 +122,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			space.pressed = false;
 			return true;
 		}
-	} else if (evt.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
+	} /*else if (evt.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
 		if (SDL_GetWindowRelativeMouseMode(Mode::window) == false) {
 			SDL_SetWindowRelativeMouseMode(Mode::window, true);
 			return true;
@@ -139,7 +140,7 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 			);
 			return true;
 		}
-	}
+	}*/
 
 	return false;
 }
@@ -193,29 +194,60 @@ void PlayMode::update(float elapsed) {
 	duck_take_step(elapsed);
 
 	if (rhythm.all_strong_beats_hit()) {
+		success = true;
 		std::cout << "[PlayMode] finished perfect!!!" << std::endl;
 	}
 
 	//move camera:
+	//{
+
+	//	//combine inputs into a move:
+	//	constexpr float PlayerSpeed = 30.0f;
+	//	glm::vec2 move = glm::vec2(0.0f);
+	//	if (left.pressed && !right.pressed) move.x =-1.0f;
+	//	if (!left.pressed && right.pressed) move.x = 1.0f;
+	//	if (down.pressed && !up.pressed) move.y =-1.0f;
+	//	if (!down.pressed && up.pressed) move.y = 1.0f;
+
+	//	//make it so that moving diagonally doesn't go faster:
+	//	if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
+
+	//	glm::mat4x3 frame = camera->transform->make_parent_from_local();
+	//	glm::vec3 frame_right = frame[0];
+	//	//glm::vec3 up = frame[1];
+	//	glm::vec3 frame_forward = -frame[2];
+
+	//	camera->transform->position += move.x * frame_right + move.y * frame_forward;
+	//}
+	
+	// camera follow duck
 	{
+		glm::mat4x3 duck_frame = duck->make_parent_from_local();
+		glm::vec3 duck_right = duck_frame[0];
+		glm::vec3 duck_up = duck_frame[1];
+		glm::vec3 duck_fwd = -duck_frame[2];
+		
 
-		//combine inputs into a move:
-		constexpr float PlayerSpeed = 30.0f;
-		glm::vec2 move = glm::vec2(0.0f);
-		if (left.pressed && !right.pressed) move.x =-1.0f;
-		if (!left.pressed && right.pressed) move.x = 1.0f;
-		if (down.pressed && !up.pressed) move.y =-1.0f;
-		if (!down.pressed && up.pressed) move.y = 1.0f;
+		glm::vec3 desired_cam_pos =
+			duck->position
+			+ cam_local_offset.x * duck_right
+			+ cam_local_offset.y * duck_fwd
+			+ cam_local_offset.z * duck_up;
 
-		//make it so that moving diagonally doesn't go faster:
-		if (move != glm::vec2(0.0f)) move = glm::normalize(move) * PlayerSpeed * elapsed;
 
-		glm::mat4x3 frame = camera->transform->make_parent_from_local();
-		glm::vec3 frame_right = frame[0];
-		//glm::vec3 up = frame[1];
-		glm::vec3 frame_forward = -frame[2];
+		// code adjusted from exponential camera smoothing: https://lisyarus.github.io/blog/posts/exponential-smoothing.html
+		static bool cam_init = false;
+		float a_pos = 0.0f;
+		if (cam_pos > 0.0f) a_pos = 1.0f - std::exp(-elapsed / cam_pos);
 
-		camera->transform->position += move.x * frame_right + move.y * frame_forward;
+		if (!cam_init) {
+			camera->transform->position = desired_cam_pos;
+			cam_init = true;
+		}
+		else {
+			camera->transform->position += a_pos * (desired_cam_pos - camera->transform->position);
+		}
+
 	}
 
 	{ //update listener to camera position:
@@ -263,13 +295,17 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			0.0f, 0.0f, 0.0f, 1.0f
 		));
 
+		const char* prompt = "Tap space to make Duckie step on the strong beats";
+		const char* success_msg = "Duckie successfully danced a 3/4!";
+		const char* text = success ? success_msg : prompt;
+
 		constexpr float H = 0.09f;
-		lines.draw_text("Tap space to make Duckie step on the strong beats",
+		lines.draw_text(text,
 			glm::vec3(-aspect + 0.1f * H, -1.0 + 0.1f * H, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
 		float ofs = 2.0f / drawable_size.y;
-		lines.draw_text("Tap space to make Duckie step on the strong beats",
+		lines.draw_text(text,
 			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));

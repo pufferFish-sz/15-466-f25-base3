@@ -50,6 +50,11 @@ struct PlayMode : Mode {
 	
 	//camera:
 	Scene::Camera *camera = nullptr;
+	glm::vec3 cam_local_offset = glm::vec3(100.0f, -15.0f, -80.0f);
+	float cam_pos = 0.15f;
+
+	//UI
+	float success = false;
 
 private:
 	float tilt_time = 0.0f;
